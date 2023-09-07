@@ -78,10 +78,10 @@ with st.expander("Exercise Angina"):
     st.write("Exercise angina adalah sakit di dada yang terjadi ketika kita bermain terlalu keras atau berolahraga dan jantung kita tidak bisa mengikuti. Jantung kita membutuhkan darah dan oksigen untuk bekerja dengan baik, tetapi kadang-kadang ada halangan di dalam pembuluh darah yang membawa darah dan oksigen ke jantung. Hal ini bisa disebabkan oleh kotoran yang menempel di dinding pembuluh darah, seperti lemak atau gula. Ketika kita bermain terlalu keras, jantung kita membutuhkan lebih banyak darah dan oksigen, tetapi halangan ini membuatnya sulit untuk sampai ke jantung. Akibatnya, jantung kita merasa kesulitan dan mengirim sinyal sakit ke dada kita. Sakit ini biasanya akan hilang jika kita berhenti bermain atau mengurangi kecepatan kita.")
 
 # Muat model pertama dengan kolom 'Temperature', 'Heart_rate', 'SPO2'
-random_forest_model1 = joblib.load("rf_model2.pkl")
+random_forest_model1 = joblib.load("rf_model1.pkl")
 
 # Muat model kedua dengan kolom 'Sex', 'Chest pain type', 'Max HR', 'Exercise angina', 'Heart Disease'
-random_forest_model2 = joblib.load("rf_model1.pkl")
+random_forest_model2 = joblib.load("rf_model2.pkl")
 
 # Input dari pengguna untuk model kedua
 st.sidebar.header("Masukkan Data")
@@ -89,7 +89,7 @@ sex = st.sidebar.radio("Jenis Kelamin", ["Pria", "Wanita"])
 sex = 1 if sex == "Pria" else 0
 
 # Input dari pengguna untuk model pertama
-temperature = st.sidebar.number_input("Suhu (Temperature)", min_value=None, max_value=None, value=30)
+temperature = st.sidebar.number_input("Suhu Lingkungan", min_value=None, max_value=None, value=30)
 heart_rate = st.sidebar.number_input("Denyut Jantung (Heart Rate)", min_value=None, max_value=None, value=75)
 spo2 = st.sidebar.number_input("Tingkat SPO2", min_value=None, max_value=None, value=95)
 chest_pain_type = st.sidebar.selectbox("Tipe Nyeri Dada", [1, 2, 3, 4])
