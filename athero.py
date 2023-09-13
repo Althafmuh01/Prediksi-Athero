@@ -2,9 +2,28 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import time 
+import time
 import matplotlib.pyplot as plt
 from io import BytesIO
+import pyrebase
+
+# configurasi firebase
+config = {
+    "apiKey": "AIzaSyABTWYrtRsXI7BcFQzE_mEk7wM_9PCEAAk",
+    "authDomain": "pkm-athero.firebaseapp.com",
+    "databaseURL": "https://pkm-athero-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    "projectId": "pkm-athero",
+    "storageBucket": "pkm-athero.appspot.com",
+    "messagingSenderId": "92399131259",
+    "appId": "1:92399131259:web:dad060d2dde3439aa2a0de",
+    "measurementId": "G-D13VVQH9YW"
+
+}
+
+# inisiasi Firebase
+firebase = pyrebase.initialize_app(config)
+database = firebase.database()
+
 
 # Fungsi untuk membuat grafik
 def create_monitor_graph(heart_rate_data, spo2_data):
@@ -29,9 +48,13 @@ def create_monitor_graph(heart_rate_data, spo2_data):
     buf.seek(0)
     return buf
 
+# Ekstrak data firebase
+data_bpm = database.child("BPM").child("BPM_1").get()
+data_spo = database.child("SPO2").child("SPO2_1").get()
+
 # Data dummy untuk Heart Rate dan SPO2 (gantilah dengan data yang sesuai)
-heart_rate_data = np.random.randint(60, 100, 100)
-spo2_data = np.random.randint(90, 100, 100)
+heart_rate_data = data_bpm.val()
+spo2_data = data_spo.val()
 
 # Judul aplikasi
 st.markdown('<style>h1{font-family: "Poppins", sans-serif;}</style>', unsafe_allow_html=True)
@@ -45,11 +68,11 @@ col1, col2 = st.columns(2)
 
 # Menambahkan margin bawah untuk kolom pertama
 with col1:
-    st.markdown('<div style="background-color: #2E8B57; text-align: center; padding: 20px; border-radius: 10px; margin-bottom: 20px;">Heart Rate : 75 BPM</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #2E8B57; text-align: center; padding: 20px; border-radius: 10px; margin-bottom: 20px;">Heart Rate : {heart_rate_data} BPM</div>', unsafe_allow_html=True)
 
 # Menambahkan margin bawah untuk kolom kedua
 with col2:
-    st.markdown('<div style="background-color: #2E8B57; text-align: center; padding: 20px; border-radius: 10px; margin-bottom: 20px;">SPO2 : 95 %</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #2E8B57; text-align: center; padding: 20px; border-radius: 10px; margin-bottom: 20px;">SPO2 : {spo2_data} %</div>', unsafe_allow_html=True)
 
 # Buat grafik
 graph = create_monitor_graph(heart_rate_data, spo2_data)
@@ -89,7 +112,7 @@ sex = st.sidebar.radio("Jenis Kelamin", ["Pria", "Wanita"])
 sex = 1 if sex == "Pria" else 0
 
 # Input dari pengguna untuk model pertama
-temperature = st.sidebar.number_input("Suhu Lingkungan", min_value=None, max_value=None, value=30)
+temperature = st.sidebar.number_input("Suhu Lingkungan (°C)", min_value=None, max_value=None, value=30)
 heart_rate = st.sidebar.number_input("Denyut Jantung (Heart Rate)", min_value=None, max_value=None, value=75)
 spo2 = st.sidebar.number_input("Tingkat SPO2", min_value=None, max_value=None, value=95)
 chest_pain_type = st.sidebar.selectbox("Tipe Nyeri Dada", [1, 2, 3, 4])
@@ -98,9 +121,8 @@ exercise_angina = st.sidebar.radio("Apakah Anda Mengalami Exercise Angina?", ["Y
 exercise_angina = 1 if exercise_angina == "Ya" else 0
 
 # Tampilkan tabel DataFrame input pengguna
-# Tampilkan tabel DataFrame input pengguna
 input_data_df = pd.DataFrame({
-    'Kolom': ['Jenis Kelamin', 'Suhu (Temperature)', 'Denyut Jantung (Heart Rate)', 'Tingkat SPO2', 'Tipe Nyeri Dada', 'Denyut Jantung Maksimum (Max HR)', 'Exercise Angina'],
+    'Kolom': ['Jenis Kelamin', 'Suhu Lingkungan (°C)', 'Denyut Jantung (Heart Rate)', 'Tingkat SPO2 (%)', 'Tipe Nyeri Dada', 'Denyut Jantung Maksimum (Max HR)', 'Exercise Angina'],
     'Input': ["Pria" if sex == 1 else "Wanita", temperature, heart_rate, spo2, chest_pain_type, max_hr, "Ya" if exercise_angina == 1 else "Tidak"]
 })
 
@@ -123,6 +145,12 @@ if st.sidebar.button("Prediksi"):
         input_data = [[sex, chest_pain_type, max_hr, exercise_angina]]
         prediction = random_forest_model2.predict(input_data)
         return prediction[0]
+    
+    # Fungsi untuk memprediksi dengan model kedua
+    def predict_with_model2(sex, chest_pain_type, max_hr, exercise_angina):
+        input_data = [[sex, chest_pain_type, max_hr, exercise_angina]]
+        prediction = random_forest_model2.predict(input_data)
+        return prediction[0]
 
     # Melakukan prediksi dengan model pertama
     prediction1 = predict_with_model1(temperature, heart_rate, spo2)
@@ -136,12 +164,18 @@ if st.sidebar.button("Prediksi"):
 
     # Menggabungkan hasil prediksi dari kedua model (menggunakan aturan mayoritas)
     final_prediction = (weight_model1 * prediction1 + weight_model2 * prediction2) / (weight_model1 + weight_model2)
+    
+    # Menghitung tingkat normalitas (persentase)
+    normal_percentage = (1 - final_prediction) * 100
 
     # Menampilkan hasil prediksi akhir
     st.subheader("Hasil Prediksi:")
     if final_prediction <= 0.5:
         st.write("Status: Normal")
+        st.write(f"Status: Normal ({normal_percentage:.2f}%)")
         st.success("Hasil prediksi menunjukkan kondisi yang normal. Namun, jika Anda memiliki kekhawatiran atau perlu dukungan tambahan, kami sarankan untuk berkonsultasi dengan spesialis atau dukungan medis sesuai kebutuhan.")
     else:
         st.write("Status: Tidak Normal")
+        st.write(f"Status: Tidak Normal ({100 - normal_percentage:.2f}%)")
         st.warning("Hasil prediksi menunjukkan potensi indikasi Atherosclerosis. Namun, perlu diingat bahwa ini hanya alat prediksi dan tidak menggantikan konsultasi medis profesional. Disarankan untuk berkonsultasi dengan dokter untuk evaluasi lebih lanjut dan diagnosis yang akurat.")
+
