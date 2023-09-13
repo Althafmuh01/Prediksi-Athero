@@ -4,4 +4,4 @@ streamlit
 scikit-learn
 joblib
 matplotlib
-pyrebase
+pyrebase4
