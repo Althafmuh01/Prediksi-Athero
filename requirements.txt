@@ -4,3 +4,5 @@ streamlit
 scikit-learn
 joblib
 matplotlib
+time
+pyrebase
